@@ -103,6 +103,8 @@ const autoClickEnabled = document.getElementById('autoClickEnabled');
 const autoClickSettings = document.getElementById('autoClickSettings');
 const autoClickDelay = document.getElementById('autoClickDelay');
 const showClickNotification = document.getElementById('showClickNotification');
+const silentModeEnabled = document.getElementById('silentModeEnabled');
+const continueInBackground = document.getElementById('continueInBackground');
 
 // Load settings on init
 loadSettings();
@@ -136,7 +138,9 @@ function loadSettings() {
     'model',
     'autoClickEnabled',
     'autoClickDelay',
-    'showClickNotification'
+    'showClickNotification',
+    'silentModeEnabled',
+    'continueInBackground'
   ], (result) => {
     console.log('Loaded settings:', result);
 
@@ -167,6 +171,8 @@ function loadSettings() {
       autoClickDelay.value = result.autoClickDelay;
     }
     showClickNotification.checked = result.showClickNotification !== false; // default true
+    silentModeEnabled.checked = result.silentModeEnabled || false;
+    continueInBackground.checked = result.continueInBackground !== false; // default true
   });
 }
 
@@ -204,7 +210,9 @@ function saveSettings() {
     model: modelSelect.value,
     autoClickEnabled: autoClickEnabled.checked,
     autoClickDelay: parseInt(autoClickDelay.value),
-    showClickNotification: showClickNotification.checked
+    showClickNotification: showClickNotification.checked,
+    silentModeEnabled: silentModeEnabled.checked,
+    continueInBackground: continueInBackground.checked
   };
 
   // Validate API key warning
@@ -236,7 +244,9 @@ function resetSettings() {
     expertContext: '',
     autoClickEnabled: false,
     autoClickDelay: 300,
-    showClickNotification: true
+    showClickNotification: true,
+    silentModeEnabled: false,
+    continueInBackground: true
   };
 
   chrome.storage.sync.set(defaultSettings, () => {

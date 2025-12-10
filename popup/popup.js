@@ -209,6 +209,9 @@ async function handleAnalyze() {
       return;
     }
 
+    // Set analyzing flag for background continuation
+    isAnalyzing = true;
+
     // Show loading
     showLoading(true);
 
@@ -277,10 +280,13 @@ async function handleAnalyze() {
       }
     });
 
+    // Reset analyzing flag
+    isAnalyzing = false;
     showMessage('Analysis complete!', 'success');
 
   } catch (error) {
     console.error('Analyze failed:', error);
+    isAnalyzing = false;
     showLoading(false);
     showError('Analysis failed: ' + error.message);
   }
@@ -547,6 +553,41 @@ async function checkStoredData() {
     if (emptyState) emptyState.style.display = 'block';
   }
 }
+
+// Track if analysis is in progress
+let isAnalyzing = false;
+
+// Handle popup closing - continue analysis in background if enabled
+window.addEventListener('beforeunload', async () => {
+  if (isAnalyzing && capturedImageData) {
+    console.log('Popup closing while analyzing, requesting background continuation...');
+
+    // Check if continue in background is enabled
+    const settings = await chrome.storage.sync.get(['continueInBackground', 'autoClickEnabled']);
+
+    if (settings.continueInBackground && settings.autoClickEnabled) {
+      // Send message to background to continue analysis
+      chrome.runtime.sendMessage({
+        action: 'continueBackgroundAnalysis'
+      });
+    }
+  }
+});
+
+// Also listen for visibility change (popup losing focus)
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'hidden' && isAnalyzing && capturedImageData) {
+    console.log('Popup hidden while analyzing...');
+
+    const settings = await chrome.storage.sync.get(['continueInBackground', 'autoClickEnabled']);
+
+    if (settings.continueInBackground && settings.autoClickEnabled) {
+      chrome.runtime.sendMessage({
+        action: 'continueBackgroundAnalysis'
+      });
+    }
+  }
+});
 
 // Initialize
 loadSettings();

@@ -102,6 +102,12 @@ async function handleCaptureFull() {
       return;
     }
 
+    // Get settings to check for silent mode
+    const settings = await chrome.storage.sync.get([
+      'silentModeEnabled',
+      'autoClickEnabled'
+    ]);
+
     // Capture full viewport
     const dataUrl = await chrome.tabs.captureVisibleTab(null, {
       format: 'png',
@@ -116,9 +122,19 @@ async function handleCaptureFull() {
       captureTimestamp: Date.now()
     });
 
-    // Open popup to show result and trigger analysis
-    await chrome.action.openPopup();
-    console.log('Full screen capture complete, popup opened');
+    // Check if Silent Mode is enabled
+    if (settings.silentModeEnabled && settings.autoClickEnabled) {
+      console.log('SILENT MODE - Running background analysis...');
+
+      // Run analysis in background without opening popup
+      await analyzeInBackground(dataUrl, tab.id);
+
+      console.log('Full screen SILENT MODE complete');
+    } else {
+      // Open popup to show result and trigger analysis
+      await chrome.action.openPopup();
+      console.log('Full screen capture complete, popup opened');
+    }
 
   } catch (error) {
     console.error('Error handling full capture:', error);
@@ -162,6 +178,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Handle request to continue analysis in background (when popup is about to close)
+  if (message.action === 'continueBackgroundAnalysis') {
+    console.log('Popup requested background analysis continuation');
+
+    // Get the pending analysis data
+    chrome.storage.local.get(['pendingBackgroundAnalysis', 'capturedImage'], async (data) => {
+      if (data.capturedImage) {
+        // Get active tab
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab) {
+          console.log('Continuing analysis in background for tab:', tab.id);
+          analyzeInBackground(data.capturedImage, tab.id);
+        }
+      }
+    });
+
+    sendResponse({ success: true });
+    return true;
+  }
+
+  // Handle direct background analysis request
+  if (message.action === 'analyzeInBackground') {
+    console.log('Direct background analysis requested');
+
+    chrome.tabs.query({ active: true, currentWindow: true }).then(async ([tab]) => {
+      if (tab && message.imageData) {
+        const result = await analyzeInBackground(message.imageData, tab.id);
+        sendResponse(result);
+      } else {
+        sendResponse({ success: false, reason: 'no_tab_or_image' });
+      }
+    });
+
+    return true;
+  }
+
   return true;
 });
 
@@ -177,6 +229,13 @@ async function handleSelectionComplete(rect, tabId, devicePixelRatio = 1) {
     if (!rect || !rect.width || !rect.height) {
       throw new Error('Invalid selection rectangle');
     }
+
+    // Get settings to check for silent mode
+    const settings = await chrome.storage.sync.get([
+      'silentModeEnabled',
+      'continueInBackground',
+      'autoClickEnabled'
+    ]);
 
     console.log('Step 1: Capturing full viewport...');
 
@@ -202,15 +261,45 @@ async function handleSelectionComplete(rect, tabId, devicePixelRatio = 1) {
     });
 
     console.log('Step 6: Stored successfully!');
-    console.log('Step 7: Re-opening popup...');
 
-    // Reduced delay before opening popup (was 100ms, now 50ms for speed)
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Check if Silent Mode is enabled (analyze in background without popup)
+    if (settings.silentModeEnabled && settings.autoClickEnabled) {
+      console.log('Step 7: SILENT MODE - Running background analysis...');
 
-    // Re-open popup
-    await chrome.action.openPopup();
+      // Run analysis in background without opening popup
+      await analyzeInBackground(croppedDataUrl, tabId);
 
-    console.log('=== SELECTION PROCESSING COMPLETE ===');
+      console.log('=== SILENT MODE COMPLETE ===');
+    } else if (settings.continueInBackground && settings.autoClickEnabled) {
+      console.log('Step 7: Opening popup with background fallback...');
+
+      // Store pending analysis flag so background can continue if popup closes
+      await chrome.storage.local.set({
+        pendingBackgroundAnalysis: {
+          imageData: croppedDataUrl,
+          tabId: tabId,
+          timestamp: Date.now()
+        }
+      });
+
+      // Reduced delay before opening popup
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Re-open popup
+      await chrome.action.openPopup();
+
+      console.log('=== SELECTION PROCESSING COMPLETE (with background fallback) ===');
+    } else {
+      console.log('Step 7: Re-opening popup (standard mode)...');
+
+      // Reduced delay before opening popup
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Re-open popup
+      await chrome.action.openPopup();
+
+      console.log('=== SELECTION PROCESSING COMPLETE ===');
+    }
 
   } catch (error) {
     console.error('=== SELECTION PROCESSING FAILED ===');
@@ -326,6 +415,295 @@ async function handleAnalyze(imageData, mode, context) {
   // Will call Gemini API
 
   return { message: 'Phase 3: Analysis not yet implemented' };
+}
+
+// ===================================================
+// BACKGROUND AI ANALYSIS - Continue when popup closes
+// ===================================================
+
+/**
+ * Analyze image in background (without popup)
+ * This allows AI to continue even when popup is closed
+ */
+async function analyzeInBackground(imageDataUrl, tabId) {
+  console.log('=== BACKGROUND ANALYSIS START ===');
+
+  try {
+    // Get settings
+    const settings = await chrome.storage.sync.get([
+      'apiKey',
+      'answerMode',
+      'expertContext',
+      'autoClickEnabled',
+      'autoClickDelay',
+      'showClickNotification',
+      'model'
+    ]);
+
+    if (!settings.apiKey) {
+      console.error('No API key configured');
+      await showNotificationOnTab(tabId, '❌ Chưa cài đặt API Key');
+      return { success: false, reason: 'no_api_key' };
+    }
+
+    // Store analysis state
+    await chrome.storage.local.set({
+      backgroundAnalysis: {
+        status: 'analyzing',
+        startTime: Date.now()
+      }
+    });
+
+    // Show analyzing notification on tab
+    await showNotificationOnTab(tabId, '🔄 Đang phân tích...');
+
+    // Call Gemini API directly (inline implementation to avoid import issues in service worker)
+    const result = await callGeminiAPI(
+      imageDataUrl,
+      settings.answerMode || 'tracNghiem',
+      settings.expertContext || '',
+      settings.apiKey,
+      settings.model || 'gemini-2.0-flash-exp'
+    );
+
+    console.log('Background analysis result:', result.finalAnswer);
+
+    // Store result
+    await chrome.storage.local.set({
+      analysisResult: {
+        fullText: result.fullText,
+        finalAnswer: result.finalAnswer,
+        timestamp: Date.now()
+      },
+      backgroundAnalysis: {
+        status: 'complete',
+        endTime: Date.now()
+      }
+    });
+
+    // If auto-click is enabled and we have an answer, trigger it
+    if (settings.autoClickEnabled && result.finalAnswer) {
+      console.log('Background auto-click triggered');
+      await triggerAutoClickFromBackground(
+        tabId,
+        result.finalAnswer,
+        settings.autoClickDelay || 300,
+        settings.showClickNotification !== false
+      );
+    } else {
+      // Show success notification
+      await showNotificationOnTab(tabId, `✅ Đáp án: ${result.finalAnswer || 'Xem popup'}`);
+    }
+
+    console.log('=== BACKGROUND ANALYSIS COMPLETE ===');
+    return { success: true, finalAnswer: result.finalAnswer };
+
+  } catch (error) {
+    console.error('Background analysis failed:', error);
+    await chrome.storage.local.set({
+      backgroundAnalysis: {
+        status: 'error',
+        error: error.message
+      }
+    });
+    await showNotificationOnTab(tabId, '❌ Lỗi: ' + error.message.substring(0, 50));
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Call Gemini API (inline version for background service worker)
+ */
+async function callGeminiAPI(imageDataUrl, mode, expertContext, apiKey, model) {
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+  // Build prompt
+  const expertRole = expertContext
+    ? `Bạn là chuyên gia ${expertContext}.`
+    : 'Bạn là trợ lý AI thông minh.';
+
+  let prompt;
+  if (mode === 'tracNghiem') {
+    prompt = `${expertRole}
+
+NHIỆM VỤ: Trả lời các câu hỏi trắc nghiệm trong hình.
+
+CÁCH LÀM:
+1. Đọc và hiểu từng câu hỏi
+2. Suy luận ngắn gọn (1-2 dòng mỗi câu)
+3. Đưa ra đáp án cuối cùng
+
+FORMAT TRẢ LỜI (BẮT BUỘC):
+[Suy luận ngắn]
+
+ĐÁP ÁN:
+Câu 1: [A/B/C/D]
+(tiếp tục nếu có nhiều câu)
+
+Bắt đầu phân tích:`;
+  } else {
+    prompt = `${expertRole}
+
+Phân tích hình ảnh và trả lời chi tiết câu hỏi.
+Format: 
+1. Phân tích 
+2. Các bước giải
+3. FINAL_ANSWER: [câu trả lời]
+
+Trả lời bằng tiếng Việt.`;
+  }
+
+  // Extract base64
+  const base64Data = imageDataUrl.split(',')[1];
+
+  // Build request
+  const requestBody = {
+    contents: [{
+      parts: [
+        { text: prompt },
+        { inline_data: { mime_type: 'image/png', data: base64Data } }
+      ]
+    }],
+    generationConfig: {
+      temperature: mode === 'tracNghiem' ? 0.1 : 0.4,
+      maxOutputTokens: mode === 'tracNghiem' ? 512 : 2048,
+    }
+  };
+
+  const response = await fetch(`${endpoint}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || `API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  // Extract text
+  let text = '';
+  if (data.candidates && data.candidates[0]?.content?.parts) {
+    text = data.candidates[0].content.parts[0].text || '';
+  }
+
+  // Parse answer
+  let finalAnswer = null;
+
+  // Try various patterns
+  const dapAnSection = text.match(/ĐÁP\s*ÁN\s*:?\s*([\s\S]*?)(?=\n\n|$)/i);
+  const searchText = dapAnSection ? dapAnSection[1] : text;
+
+  const cauPattern = /[Cc]âu\s*(\d+)\s*[:\.\)]\s*([A-Da-d])/gi;
+  const matches = [...searchText.matchAll(cauPattern)];
+
+  if (matches.length > 0) {
+    const sorted = matches.sort((a, b) => parseInt(a[1]) - parseInt(b[1]));
+    finalAnswer = sorted.map(m => m[2].toUpperCase()).join(', ');
+  } else {
+    const singleMatch = text.match(/[Đđ]áp\s*án[:\s]+([A-Da-d])/i);
+    if (singleMatch) {
+      finalAnswer = singleMatch[1].toUpperCase();
+    } else {
+      const freeText = text.match(/FINAL_ANSWER[S]?:?\s*(.+?)(?:\n\n|$)/i);
+      if (freeText) {
+        finalAnswer = freeText[1].trim();
+      }
+    }
+  }
+
+  return { fullText: text, finalAnswer };
+}
+
+/**
+ * Trigger auto-click from background
+ */
+async function triggerAutoClickFromBackground(tabId, answer, delay, showNotification) {
+  try {
+    // Ensure content script is loaded
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+    } catch (e) {
+      await chrome.scripting.insertCSS({
+        target: { tabId },
+        files: ['content/content.css']
+      });
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content/content.js']
+      });
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    // Send auto-click command
+    const response = await chrome.tabs.sendMessage(tabId, {
+      action: 'autoClickAnswer',
+      answer: answer,
+      delay: delay,
+      showNotification: showNotification
+    });
+
+    console.log('Background auto-click response:', response);
+    return response?.success;
+  } catch (error) {
+    console.error('Background auto-click error:', error);
+    return false;
+  }
+}
+
+/**
+ * Show notification on specific tab
+ */
+async function showNotificationOnTab(tabId, message) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (msg) => {
+        // Remove existing notification
+        const existing = document.getElementById('vision-key-bg-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.id = 'vision-key-bg-notification';
+        notification.innerHTML = msg;
+        notification.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          z-index: 2147483647;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          animation: slideIn 0.3s ease-out;
+        `;
+
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.style.animation = 'slideOut 0.3s ease-in forwards';
+          setTimeout(() => notification.remove(), 300);
+        }, 3000);
+      },
+      args: [message]
+    });
+  } catch (error) {
+    console.error('Failed to show notification:', error);
+  }
 }
 
 // Keep service worker alive
