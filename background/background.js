@@ -26,6 +26,10 @@ chrome.commands.onCommand.addListener((command) => {
     handleCaptureSelection();
   } else if (command === 'capture-full') {
     handleCaptureFull();
+  } else if (command === 'quick-mc') {
+    handleQuickCapture('tracNghiem');
+  } else if (command === 'quick-essay') {
+    handleQuickCapture('tuLuan');
   }
 });
 
@@ -138,6 +142,62 @@ async function handleCaptureFull() {
 
   } catch (error) {
     console.error('Error handling full capture:', error);
+    chrome.action.openPopup();
+  }
+}
+
+// Handle quick capture with specific mode (Ctrl+Shift+T for MC, Ctrl+Shift+Y for Essay)
+async function handleQuickCapture(mode) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab) {
+      console.error('No active tab found');
+      return;
+    }
+
+    console.log('Quick capture for mode:', mode, 'tab:', tab.id);
+
+    // Check for restricted URLs
+    if (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') ||
+      tab.url.startsWith('about:') || tab.url.startsWith('chrome-extension://')) {
+      console.log('Cannot capture on system page');
+      chrome.action.openPopup();
+      return;
+    }
+
+    // Capture full viewport
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, {
+      format: 'png',
+      quality: 100
+    });
+
+    console.log('Quick capture completed! Mode:', mode);
+
+    // Store captured image and mode override
+    await chrome.storage.local.set({
+      capturedImage: dataUrl,
+      captureTimestamp: Date.now(),
+      modeOverride: mode // Override mode for this capture
+    });
+
+    // Get settings
+    const settings = await chrome.storage.sync.get([
+      'silentModeEnabled',
+      'autoClickEnabled'
+    ]);
+
+    // Always run in background for quick capture (it's meant to be fast)
+    if (settings.autoClickEnabled) {
+      console.log('Quick capture - Running background analysis with mode:', mode);
+      await analyzeInBackgroundWithMode(dataUrl, tab.id, mode);
+    } else {
+      // Open popup if auto-click not enabled
+      await chrome.action.openPopup();
+    }
+
+  } catch (error) {
+    console.error('Error handling quick capture:', error);
     chrome.action.openPopup();
   }
 }
@@ -437,6 +497,7 @@ async function analyzeInBackground(imageDataUrl, tabId) {
       'autoClickEnabled',
       'autoClickDelay',
       'showClickNotification',
+      'showAnalyzingNotification',
       'model'
     ]);
 
@@ -454,8 +515,10 @@ async function analyzeInBackground(imageDataUrl, tabId) {
       }
     });
 
-    // Show analyzing notification on tab
-    await showNotificationOnTab(tabId, '🔄 Đang phân tích...');
+    // Show analyzing notification on tab (if enabled)
+    if (settings.showAnalyzingNotification !== false) {
+      await showNotificationOnTab(tabId, '🔄 Đang phân tích...');
+    }
 
     // Call Gemini API directly (inline implementation to avoid import issues in service worker)
     const result = await callGeminiAPI(

@@ -117,138 +117,143 @@
               <option value="500">0.5s</option>
               <option value="800">0.8s (An toàn)</option>
             </select>
+            <div class="sub-option">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showClickNotification" checked>
+                <span data-i18n="label_notification">Hiển thị thông báo khi click</span>
+              </label>
+            </div>
+            <div class="sub-option">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showAnalyzingNotification" checked>
+                <span>Hiển thị "Đang phân tích..." khi chạy nền</span>
+              </label>
+            </div>
+            <div class="sub-option">
+              <label class="checkbox-label">
+                <input type="checkbox" id="silentModeEnabled">
+                <span>Chế độ nền (Không hiện popup khi dùng phím tắt)</span>
+              </label>
+            </div>
+            <div class="sub-option">
+              <label class="checkbox-label">
+                <input type="checkbox" id="continueInBackground" checked>
+                <span>Tiếp tục AI khi popup đóng</span>
+              </label>
+            </div>
           </div>
-          <div class="sub-option">
-            <label class="checkbox-label">
-              <input type="checkbox" id="showClickNotification" checked>
-              <span data-i18n="label_notification">Hiển thị thông báo khi click</span>
-            </label>
+        </div>
+
+        <!-- Language & Model -->
+        <div class="row">
+          <div class="section">
+            <div class="section-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                </path>
+              </svg>
+              <h2 data-i18n="section_language">Ngôn ngữ</h2>
+            </div>
+            <select id="language" class="select-input">
+              <option value="vi" selected>Tiếng Việt</option>
+              <option value="en">English</option>
+            </select>
           </div>
-          <div class="sub-option">
-            <label class="checkbox-label">
-              <input type="checkbox" id="silentModeEnabled">
-              <span>Chế độ nền (Không hiện popup khi dùng phím tắt)</span>
-            </label>
+
+          <div class="section">
+            <div class="section-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+                <line x1="20" y1="9" x2="23" y2="9"></line>
+                <line x1="20" y1="14" x2="23" y2="14"></line>
+                <line x1="1" y1="9" x2="4" y2="9"></line>
+                <line x1="1" y1="14" x2="4" y2="14"></line>
+              </svg>
+              <h2 data-i18n="section_model">Mô hình AI</h2>
+            </div>
+            <select id="model" class="select-input">
+              <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash (Fastest)</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Recommended)</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </select>
           </div>
-          <div class="sub-option">
-            <label class="checkbox-label">
-              <input type="checkbox" id="continueInBackground" checked>
-              <span>Tiếp tục AI khi popup đóng</span>
-            </label>
+        </div>
+
+        <!-- Data Management -->
+        <div class="section faded">
+          <div class="section-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <h2 data-i18n="section_data">Dữ liệu & Phím tắt</h2>
+          </div>
+          <div class="button-grid">
+            <button id="changeShortcutBtn" class="btn-outline" data-i18n="btn_shortcut">
+              Phím tắt
+            </button>
+            <button id="exportBtn" class="btn-outline" data-i18n="btn_export">Xuất cài đặt</button>
+            <button id="importBtn" class="btn-outline" data-i18n="btn_import">Nhập cài đặt</button>
+            <button id="clearHistoryBtn" class="btn-outline danger-hover" data-i18n="btn_clear_history">Xóa lịch
+              sử</button>
           </div>
         </div>
       </div>
 
-      <!-- Language & Model -->
-      <div class="row">
-        <div class="section">
-          <div class="section-header">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+      <!-- Actions Footer -->
+      <div class="actions-footer">
+        <button id="resetBtn" class="btn-text danger" data-i18n="btn_reset">Khôi phục mặc định</button>
+        <button id="saveBtn" class="btn-primary-lg" data-i18n="btn_save">Lưu thay đổi</button>
+      </div>
+
+      <div id="status" class="status-toast"></div>
+
+      <footer class="main-footer">
+        <p>Vision Key <span class="footer-badge">Premium v2.0</span> by <a href="https://hailamdev.space/"
+            target="_blank">Nguyễn Xuân Hải</a></p>
+
+        <div class="github-stats" id="githubStats" style="display: none;">
+          <a href="https://github.com/xuanhai0913/Extension-Vision-Premium" target="_blank" class="stat-item">
+            <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
               </path>
             </svg>
-            <h2 data-i18n="section_language">Ngôn ngữ</h2>
-          </div>
-          <select id="language" class="select-input">
-            <option value="vi" selected>Tiếng Việt</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-
-        <div class="section">
-          <div class="section-header">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-              <rect x="9" y="9" width="6" height="6"></rect>
-              <line x1="9" y1="1" x2="9" y2="4"></line>
-              <line x1="15" y1="1" x2="15" y2="4"></line>
-              <line x1="9" y1="20" x2="9" y2="23"></line>
-              <line x1="15" y1="20" x2="15" y2="23"></line>
-              <line x1="20" y1="9" x2="23" y2="9"></line>
-              <line x1="20" y1="14" x2="23" y2="14"></line>
-              <line x1="1" y1="9" x2="4" y2="9"></line>
-              <line x1="1" y1="14" x2="4" y2="14"></line>
+            <span id="starCount">...</span> Stars
+          </a>
+          <a href="https://github.com/xuanhai0913/Extension-Vision-Premium/fork" target="_blank" class="stat-item">
+            <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z">
+              </path>
             </svg>
-            <h2 data-i18n="section_model">Mô hình AI</h2>
-          </div>
-          <select id="model" class="select-input">
-            <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash (Fastest)</option>
-            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Recommended)</option>
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-          </select>
+            <span id="forkCount">...</span> Forks
+          </a>
         </div>
-      </div>
 
-      <!-- Data Management -->
-      <div class="section faded">
-        <div class="section-header">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-          <h2 data-i18n="section_data">Dữ liệu & Phím tắt</h2>
+        <div class="links">
+          <a href="https://github.com/xuanhai0913/Extension-Vision-Premium" target="_blank">GitHub</a> •
+          <a href="https://github.com/xuanhai0913/Extension-Vision-Premium/issues" target="_blank"
+            data-i18n="link_support">Hỗ
+            trợ</a>
         </div>
-        <div class="button-grid">
-          <button id="changeShortcutBtn" class="btn-outline" data-i18n="btn_shortcut">
-            Phím tắt
-          </button>
-          <button id="exportBtn" class="btn-outline" data-i18n="btn_export">Xuất cài đặt</button>
-          <button id="importBtn" class="btn-outline" data-i18n="btn_import">Nhập cài đặt</button>
-          <button id="clearHistoryBtn" class="btn-outline danger-hover" data-i18n="btn_clear_history">Xóa lịch
-            sử</button>
-        </div>
-      </div>
+        <p style="font-size: 11px; margin-top: 5px;">License: MIT</p>
+      </footer>
     </div>
 
-    <!-- Actions Footer -->
-    <div class="actions-footer">
-      <button id="resetBtn" class="btn-text danger" data-i18n="btn_reset">Khôi phục mặc định</button>
-      <button id="saveBtn" class="btn-primary-lg" data-i18n="btn_save">Lưu thay đổi</button>
-    </div>
-
-    <div id="status" class="status-toast"></div>
-
-    <footer class="main-footer">
-      <p>Vision Key <span class="footer-badge">Premium v2.0</span> by <a href="https://hailamdev.space/"
-          target="_blank">Nguyễn Xuân Hải</a></p>
-
-      <div class="github-stats" id="githubStats" style="display: none;">
-        <a href="https://github.com/xuanhai0913/Extension-Vision-Premium" target="_blank" class="stat-item">
-          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
-            </path>
-          </svg>
-          <span id="starCount">...</span> Stars
-        </a>
-        <a href="https://github.com/xuanhai0913/Extension-Vision-Premium/fork" target="_blank" class="stat-item">
-          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z">
-            </path>
-          </svg>
-          <span id="forkCount">...</span> Forks
-        </a>
-      </div>
-
-      <div class="links">
-        <a href="https://github.com/xuanhai0913/Extension-Vision-Premium" target="_blank">GitHub</a> •
-        <a href="https://github.com/xuanhai0913/Extension-Vision-Premium/issues" target="_blank"
-          data-i18n="link_support">Hỗ
-          trợ</a>
-      </div>
-      <p style="font-size: 11px; margin-top: 5px;">License: MIT</p>
-    </footer>
-  </div>
-
-  <input type="file" id="importFileInput" accept=".json" style="display:none;">
-  <script src="settings.js"></script>
+    <input type="file" id="importFileInput" accept=".json" style="display:none;">
+    <script src="settings.js"></script>
 </body>
 
 </html>

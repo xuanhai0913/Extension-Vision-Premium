@@ -103,6 +103,7 @@ const autoClickEnabled = document.getElementById('autoClickEnabled');
 const autoClickSettings = document.getElementById('autoClickSettings');
 const autoClickDelay = document.getElementById('autoClickDelay');
 const showClickNotification = document.getElementById('showClickNotification');
+const showAnalyzingNotification = document.getElementById('showAnalyzingNotification');
 const silentModeEnabled = document.getElementById('silentModeEnabled');
 const continueInBackground = document.getElementById('continueInBackground');
 
@@ -139,6 +140,7 @@ function loadSettings() {
     'autoClickEnabled',
     'autoClickDelay',
     'showClickNotification',
+    'showAnalyzingNotification',
     'silentModeEnabled',
     'continueInBackground'
   ], (result) => {
@@ -171,6 +173,7 @@ function loadSettings() {
       autoClickDelay.value = result.autoClickDelay;
     }
     showClickNotification.checked = result.showClickNotification !== false; // default true
+    showAnalyzingNotification.checked = result.showAnalyzingNotification !== false; // default true
     silentModeEnabled.checked = result.silentModeEnabled || false;
     continueInBackground.checked = result.continueInBackground !== false; // default true
   });
@@ -211,6 +214,7 @@ function saveSettings() {
     autoClickEnabled: autoClickEnabled.checked,
     autoClickDelay: parseInt(autoClickDelay.value),
     showClickNotification: showClickNotification.checked,
+    showAnalyzingNotification: showAnalyzingNotification.checked,
     silentModeEnabled: silentModeEnabled.checked,
     continueInBackground: continueInBackground.checked
   };
@@ -245,6 +249,7 @@ function resetSettings() {
     autoClickEnabled: false,
     autoClickDelay: 300,
     showClickNotification: true,
+    showAnalyzingNotification: true,
     silentModeEnabled: false,
     continueInBackground: true
   };
