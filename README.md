@@ -14,7 +14,7 @@
 | Nền tảng | Trạng thái | Link tải / Repo |
 |:--------:|:----------:|:----------------|
 |  **macOS Native** |  **Stable** | [**Vision-Key** (Swift)](https://github.com/xuanhai0913/Vision-Key) <br> [![Stars](https://img.shields.io/github/stars/xuanhai0913/Vision-Key?style=social)](https://github.com/xuanhai0913/Vision-Key) |
-|  **Extension** |  **Stable** | [**Chrome/Edge/Brave**](https://github.com/xuanhai0913/Extension-Vision-Key) <br> *(Repo hiện tại)* <br> [![Stars](https://img.shields.io/github/stars/xuanhai0913/Extension-Vision-Key?style=social)](https://github.com/xuanhai0913/Extension-Vision-Key) |
+|  **Extension** |  **Stable** | [**Chrome/Edge/Brave**](https://github.com/xuanhai0913/Extension-Vision-Premium) <br> *(Repo hiện tại)* <br> [![Stars](https://img.shields.io/github/stars/xuanhai0913/Extension-Vision-Premium?style=social)](https://github.com/xuanhai0913/Extension-Vision-Premium) |
 |  **Windows Native** | 🚧 **Dev** | *Đang phát triển...* |
 
 ---
@@ -68,7 +68,7 @@
 
 1. **Clone hoặc tải source code:**
    ```bash
-   git clone https://github.com/xuanhai0913/Extension-Vision-Key.git
+   git clone https://github.com/xuanhai0913/Extension-Vision-Premium.git
    ```
 
 2. **Mở quản lý tiện ích:**
@@ -80,7 +80,7 @@
 
 4. **Tải tiện ích:**
    - Click nút **"Load unpacked"** (Tải tiện ích đã giải nén).
-   - Chọn thư mục \`Extension-Vision-Key\` vừa tải về.
+   - Chọn thư mục \`Extension-Vision-Premium\` vừa tải về.
 
 ## 📖 Sử dụng
 
@@ -114,7 +114,7 @@
 ### Cấu trúc Project
 
 ```
-Extension-Vision-Key/
+Extension-Vision-Premium/
 ├── manifest.json        # Cấu hình Extension (V3)
 ├── background/          # Service workers (xử lý ảnh nền)
 ├── content/             # Script chạy trên trang web (vùng chọn)

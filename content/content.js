@@ -419,23 +419,62 @@
       const clickedOptions = [];
 
       for (const singleAnswer of answerList) {
-        // Convert letter to position if needed (A->1, B->2, etc.)
-        const targetPosition = letterToPosition(singleAnswer);
+        // Extract just the letter if answer contains more (e.g., "B. receptionist" -> "B")
+        const letterMatch = singleAnswer.match(/^([A-D])/i);
+        const targetLetter = letterMatch ? letterMatch[1].toUpperCase() : singleAnswer.toUpperCase();
 
-        // Try multiple matching strategies
+        // Convert letter to position if needed (A->1, B->2, etc.) - used as fallback
+        const targetPosition = letterToPosition(targetLetter);
+
+        // Try multiple matching strategies in order of priority
         let matchingOption = null;
 
-        // Strategy 1: Match by exact text (for simple A, B, C, D answers)
-        matchingOption = options.find(opt => opt.textUpper === singleAnswer);
+        // Strategy 1: Match by letter PREFIX in option text (e.g., "B. receptionist" starts with "B")
+        // This handles Quizizz's scrambled options where visual position != letter
+        matchingOption = options.find(opt => {
+          const textLetterMatch = opt.text.match(/^([A-D])[.\s:)]/i);
+          if (textLetterMatch) {
+            return textLetterMatch[1].toUpperCase() === targetLetter;
+          }
+          return false;
+        });
 
-        // Strategy 2: Match by position number
-        if (!matchingOption) {
-          matchingOption = options.find(opt => opt.position === targetPosition);
+        if (matchingOption) {
+          console.log('Matched by text letter prefix:', targetLetter, '->', matchingOption.text.substring(0, 20));
         }
 
-        // Strategy 3: Match if answer is a number directly
+        // Strategy 2: Match by exact full text (if AI returned full option text)
+        if (!matchingOption) {
+          matchingOption = options.find(opt => opt.textUpper === singleAnswer);
+          if (matchingOption) {
+            console.log('Matched by exact text');
+          }
+        }
+
+        // Strategy 3: Match by partial text content (AI returned part of the answer)
+        if (!matchingOption && singleAnswer.length > 2) {
+          matchingOption = options.find(opt =>
+            opt.textUpper.includes(singleAnswer) || singleAnswer.includes(opt.textUpper)
+          );
+          if (matchingOption) {
+            console.log('Matched by partial text');
+          }
+        }
+
+        // Strategy 4: Match by position number (fallback for simple quizzes without letter prefixes)
+        if (!matchingOption) {
+          matchingOption = options.find(opt => opt.position === targetPosition);
+          if (matchingOption) {
+            console.log('Matched by position fallback:', targetPosition);
+          }
+        }
+
+        // Strategy 5: Match if answer is a number directly
         if (!matchingOption && /^\d+$/.test(singleAnswer)) {
           matchingOption = options.find(opt => opt.position === singleAnswer);
+          if (matchingOption) {
+            console.log('Matched by direct number');
+          }
         }
 
         if (matchingOption) {
@@ -445,8 +484,8 @@
 
           // Click the button
           matchingOption.button.click();
-          console.log('Clicked option at position:', matchingOption.position);
-          clickedOptions.push(matchingOption.position);
+          console.log('Clicked option:', matchingOption.text.substring(0, 30));
+          clickedOptions.push(targetLetter);
         } else {
           console.log('No match found for:', singleAnswer);
         }

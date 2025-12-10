@@ -326,7 +326,7 @@ function showStatus(message, type = 'success') {
 
 // Fetch Github Stars and Forks
 async function fetchGithubStats() {
-  const repo = 'xuanhai0913/Extension-Vision-Key';
+  const repo = 'xuanhai0913/Extension-Vision-Premium';
   const statsContainer = document.getElementById('githubStats');
   const starCount = document.getElementById('starCount');
   const forkCount = document.getElementById('forkCount');

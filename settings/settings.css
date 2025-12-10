@@ -555,7 +555,7 @@ input:focus,
 .sub-settings {
   margin-top: 16px;
   padding: 16px;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 8px;
   border: 1px solid var(--border);
 }
