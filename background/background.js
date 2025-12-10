@@ -575,6 +575,81 @@ async function analyzeInBackground(imageDataUrl, tabId) {
 }
 
 /**
+ * Analyze image in background with specific mode override
+ * Used for quick capture shortcuts (Ctrl+Shift+T/Y)
+ */
+async function analyzeInBackgroundWithMode(imageDataUrl, tabId, mode) {
+  console.log('=== BACKGROUND ANALYSIS WITH MODE START ===');
+  console.log('Mode override:', mode);
+
+  try {
+    // Get settings
+    const settings = await chrome.storage.sync.get([
+      'apiKey',
+      'expertContext',
+      'autoClickEnabled',
+      'autoClickDelay',
+      'showClickNotification',
+      'showAnalyzingNotification',
+      'model'
+    ]);
+
+    if (!settings.apiKey) {
+      console.error('No API key configured');
+      await showNotificationOnTab(tabId, '❌ Chưa cài đặt API Key');
+      return { success: false, reason: 'no_api_key' };
+    }
+
+    // Show analyzing notification on tab (if enabled)
+    if (settings.showAnalyzingNotification !== false) {
+      const modeText = mode === 'tracNghiem' ? '📝 Trắc nghiệm' : '📖 Tự luận';
+      await showNotificationOnTab(tabId, `🔄 ${modeText} - Đang phân tích...`);
+    }
+
+    // Call Gemini API with the specified mode
+    const result = await callGeminiAPI(
+      imageDataUrl,
+      mode, // Use the specified mode instead of settings
+      settings.expertContext || '',
+      settings.apiKey,
+      settings.model || 'gemini-2.0-flash-exp'
+    );
+
+    console.log('Quick analysis result:', result.finalAnswer);
+
+    // Store result
+    await chrome.storage.local.set({
+      analysisResult: {
+        fullText: result.fullText,
+        finalAnswer: result.finalAnswer,
+        timestamp: Date.now(),
+        mode: mode
+      }
+    });
+
+    // If auto-click is enabled and we have an answer, trigger it
+    if (settings.autoClickEnabled && result.finalAnswer) {
+      await triggerAutoClickFromBackground(
+        tabId,
+        result.finalAnswer,
+        settings.autoClickDelay || 300,
+        settings.showClickNotification !== false
+      );
+    } else {
+      await showNotificationOnTab(tabId, `✅ Đáp án: ${result.finalAnswer || 'Xem popup'}`);
+    }
+
+    console.log('=== BACKGROUND ANALYSIS WITH MODE COMPLETE ===');
+    return { success: true, finalAnswer: result.finalAnswer };
+
+  } catch (error) {
+    console.error('Background analysis with mode failed:', error);
+    await showNotificationOnTab(tabId, '❌ Lỗi: ' + error.message.substring(0, 50));
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Call Gemini API (inline version for background service worker)
  */
 async function callGeminiAPI(imageDataUrl, mode, expertContext, apiKey, model) {
