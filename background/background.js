@@ -650,89 +650,82 @@ async function analyzeInBackgroundWithMode(imageDataUrl, tabId, mode) {
 }
 
 /**
- * Call Gemini API (inline version for background service worker)
+ * Call Proxy API (updated for SaaS model)
+ * Uses proxy server instead of direct Gemini API
  */
 async function callGeminiAPI(imageDataUrl, mode, expertContext, apiKey, model) {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  // Get proxy settings
+  const settings = await chrome.storage.sync.get(['licenseKey', 'proxyUrl']);
+  const licenseKey = settings.licenseKey;
+  const proxyUrl = settings.proxyUrl || 'https://admin.hailamdev.space';
 
-  // Build prompt
-  const expertRole = expertContext
-    ? `Bạn là chuyên gia ${expertContext}.`
-    : 'Bạn là trợ lý AI thông minh.';
-
-  let prompt;
-  if (mode === 'tracNghiem') {
-    prompt = `${expertRole}
-
-NHIỆM VỤ: Trả lời các câu hỏi trắc nghiệm trong hình.
-
-CÁCH LÀM:
-1. Đọc và hiểu từng câu hỏi
-2. Suy luận ngắn gọn (1-2 dòng mỗi câu)
-3. Đưa ra đáp án cuối cùng
-
-FORMAT TRẢ LỜI (BẮT BUỘC):
-[Suy luận ngắn]
-
-ĐÁP ÁN:
-Câu 1: [A/B/C/D]
-(tiếp tục nếu có nhiều câu)
-
-Bắt đầu phân tích:`;
-  } else {
-    prompt = `${expertRole}
-
-Phân tích hình ảnh và trả lời chi tiết câu hỏi.
-Format: 
-1. Phân tích 
-2. Các bước giải
-3. FINAL_ANSWER: [câu trả lời]
-
-Trả lời bằng tiếng Việt.`;
+  if (!licenseKey) {
+    throw new Error('License Key chưa được cấu hình. Vui lòng nhập trong Settings.');
   }
 
-  // Extract base64
-  const base64Data = imageDataUrl.split(',')[1];
+  // Compress image before sending (max 1024px, JPEG 0.7 quality)
+  const compressedImage = await compressImageInBackground(imageDataUrl, 1024, 0.7);
 
-  // Build request
+  // Extract base64
+  const base64Data = compressedImage.split(',')[1];
+
+  // Build request for proxy
   const requestBody = {
-    contents: [{
-      parts: [
-        { text: prompt },
-        { inline_data: { mime_type: 'image/png', data: base64Data } }
-      ]
-    }],
-    generationConfig: {
-      temperature: mode === 'tracNghiem' ? 0.1 : 0.4,
-      maxOutputTokens: mode === 'tracNghiem' ? 512 : 2048,
-    }
+    userKey: licenseKey,
+    imageBase64: base64Data,
+    mode: mode,
+    expertContext: expertContext || '',
+    prompt: ''
   };
 
-  const response = await fetch(`${endpoint}?key=${apiKey}`, {
+  console.log('Calling proxy at:', proxyUrl);
+
+  const response = await fetch(`${proxyUrl}/api/proxy`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || `API error: ${response.status}`);
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `API error: ${response.status}`);
   }
 
-  const data = await response.json();
+  // Handle streaming response
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
 
-  // Extract text
-  let text = '';
-  if (data.candidates && data.candidates[0]?.content?.parts) {
-    text = data.candidates[0].content.parts[0].text || '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split('\n');
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.candidates?.[0]?.content?.parts?.[0]?.text) {
+            fullText += parsed.candidates[0].content.parts[0].text;
+          }
+        } catch (e) {
+          if (data.trim()) fullText += data;
+        }
+      }
+    }
   }
 
   // Parse answer
   let finalAnswer = null;
 
   // Try various patterns
-  const dapAnSection = text.match(/ĐÁP\s*ÁN\s*:?\s*([\s\S]*?)(?=\n\n|$)/i);
-  const searchText = dapAnSection ? dapAnSection[1] : text;
+  const dapAnSection = fullText.match(/ĐÁP\s*ÁN\s*:?\s*([\s\S]*?)(?=\n\n|$)/i);
+  const searchText = dapAnSection ? dapAnSection[1] : fullText;
 
   const cauPattern = /[Cc]âu\s*(\d+)\s*[:\.\)]\s*([A-Da-d])/gi;
   const matches = [...searchText.matchAll(cauPattern)];
@@ -741,19 +734,75 @@ Trả lời bằng tiếng Việt.`;
     const sorted = matches.sort((a, b) => parseInt(a[1]) - parseInt(b[1]));
     finalAnswer = sorted.map(m => m[2].toUpperCase()).join(', ');
   } else {
-    const singleMatch = text.match(/[Đđ]áp\s*án[:\s]+([A-Da-d])/i);
+    const singleMatch = fullText.match(/[Đđ]áp\s*án[:\s]+([A-Da-d])/i);
     if (singleMatch) {
       finalAnswer = singleMatch[1].toUpperCase();
     } else {
-      const freeText = text.match(/FINAL_ANSWER[S]?:?\s*(.+?)(?:\n\n|$)/i);
+      const freeText = fullText.match(/FINAL_ANSWER[S]?:?\s*(.+?)(?:\n\n|$)/i);
       if (freeText) {
         finalAnswer = freeText[1].trim();
       }
     }
   }
 
-  return { fullText: text, finalAnswer };
+  return { fullText, finalAnswer };
 }
+
+/**
+ * Compress image in background using OffscreenCanvas
+ */
+async function compressImageInBackground(dataUrl, maxDimension, quality) {
+  try {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+
+    let { width, height } = imageBitmap;
+
+    // Calculate new dimensions
+    if (width > maxDimension || height > maxDimension) {
+      if (width > height) {
+        height = Math.round(height * maxDimension / width);
+        width = maxDimension;
+      } else {
+        width = Math.round(width * maxDimension / height);
+        height = maxDimension;
+      }
+    }
+
+    // Create OffscreenCanvas
+    const canvas = new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imageBitmap, 0, 0, width, height);
+
+    // Convert to JPEG blob
+    const compressedBlob = await canvas.convertToBlob({
+      type: 'image/jpeg',
+      quality: quality
+    });
+
+    // Convert to base64
+    const arrayBuffer = await compressedBlob.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let binaryString = '';
+    const chunkSize = 32768;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binaryString += String.fromCharCode.apply(null, chunk);
+    }
+
+    const base64 = btoa(binaryString);
+    const compressedDataUrl = `data:image/jpeg;base64,${base64}`;
+
+    console.log(`Image compressed: ${dataUrl.length} -> ${compressedDataUrl.length}`);
+    return compressedDataUrl;
+
+  } catch (error) {
+    console.error('Compression failed, using original:', error);
+    return dataUrl;
+  }
+}
+
 
 /**
  * Trigger auto-click from background

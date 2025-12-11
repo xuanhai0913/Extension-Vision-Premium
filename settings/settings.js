@@ -1,14 +1,15 @@
-// Vision Key - Settings Script
+// Vision Key - Settings Script (Updated for SaaS Proxy)
 
 // Translations
 const translations = {
   vi: {
-    title: "Cài đặt - Vision Key",
+    title: "Cài đặt - Vision Key Premium",
     app_name: "Cài đặt Vision Key",
-    app_subtitle: "Trợ lý AI thông minh cho trình duyệt của bạn",
-    section_api_key: "API Key Gemini",
-    desc_api_key: "Cần thiết để AI phân tích. Chỉ được lưu trữ cục bộ trên máy của bạn.",
-    link_get_key: "Lấy API Key miễn phí",
+    app_subtitle: "Trợ lý AI thông minh - SaaS Edition",
+    section_license_key: "License Key",
+    desc_license_key: "Nhập License Key để sử dụng. Liên hệ admin để nhận key.",
+    section_proxy: "Proxy Server",
+    desc_proxy: "URL của server proxy. Mặc định: http://localhost:3000",
     section_default_mode: "Chế độ Mặc định",
     mode_mc_title: "Trắc nghiệm",
     mode_mc_desc: "Trả lời nhanh (A, B, C, D)",
@@ -29,11 +30,9 @@ const translations = {
     msg_cleared: "Đã xóa lịch sử cục bộ!",
     msg_exported: "Đã xuất cài đặt! ✓",
     msg_imported: "Đã nhập cài đặt! ✓",
-    msg_invalid_key_format: "Cảnh báo: API Key thường bắt đầu bằng 'AIza'",
+    msg_invalid_key: "License Key không hợp lệ!",
     msg_confirm_reset: "Bạn có chắc chắn muốn đặt lại tất cả cài đặt về mặc định?",
     msg_confirm_clear: "Bạn có chắc chắn muốn xóa toàn bộ lịch sử?",
-    hint_hide_key: "Ẩn API Key",
-    hint_show_key: "Hiện API Key",
     section_auto_click: "Auto-Click (Quizizz)",
     desc_auto_click: "Tự động click đáp án trên Quizizz/Wayground sau khi AI phân tích.",
     label_auto_click: "Bật Auto-Click",
@@ -41,12 +40,13 @@ const translations = {
     label_notification: "Hiển thị thông báo khi click"
   },
   en: {
-    title: "Settings - Vision Key",
+    title: "Settings - Vision Key Premium",
     app_name: "Vision Key Settings",
-    app_subtitle: "AI-powered assistant for your browser",
-    section_api_key: "Gemini API Key",
-    desc_api_key: "Required for AI analysis. Stored locally on your device.",
-    link_get_key: "Get free API Key",
+    app_subtitle: "AI-powered assistant - SaaS Edition",
+    section_license_key: "License Key",
+    desc_license_key: "Enter your license key. Contact admin to get one.",
+    section_proxy: "Proxy Server",
+    desc_proxy: "Proxy server URL. Default: http://localhost:3000",
     section_default_mode: "Default Mode",
     mode_mc_title: "Multiple Choice",
     mode_mc_desc: "Quick answer (A, B, C, D)",
@@ -67,11 +67,9 @@ const translations = {
     msg_cleared: "Local history cleared!",
     msg_exported: "Settings exported! ✓",
     msg_imported: "Settings imported! ✓",
-    msg_invalid_key_format: "Warning: API key usually starts with 'AIza'",
+    msg_invalid_key: "Invalid license key!",
     msg_confirm_reset: "Are you sure you want to reset all settings to default?",
     msg_confirm_clear: "Are you sure you want to clear all history?",
-    hint_hide_key: "Hide API Key",
-    hint_show_key: "Show API Key",
     section_auto_click: "Auto-Click (Quizizz)",
     desc_auto_click: "Automatically click answer on Quizizz/Wayground after AI analysis.",
     label_auto_click: "Enable Auto-Click",
@@ -82,11 +80,14 @@ const translations = {
 
 let currentLang = 'vi';
 
-console.log('Settings page loaded');
+console.log('Settings page loaded (SaaS Edition)');
 
 // DOM elements
-const apiKeyInput = document.getElementById('apiKey');
-const toggleKeyBtn = document.getElementById('toggleKeyBtn');
+const licenseKeyInput = document.getElementById('licenseKey');
+const checkQuotaBtn = document.getElementById('checkQuotaBtn');
+const proxyUrlInput = document.getElementById('proxyUrl');
+const quotaInfo = document.getElementById('quotaInfo');
+const quotaValue = document.getElementById('quotaValue');
 const languageSelect = document.getElementById('language');
 const modelSelect = document.getElementById('model');
 const changeShortcutBtn = document.getElementById('changeShortcutBtn');
@@ -112,7 +113,7 @@ loadSettings();
 fetchGithubStats();
 
 // Event listeners
-toggleKeyBtn.addEventListener('click', toggleApiKeyVisibility);
+checkQuotaBtn.addEventListener('click', checkQuota);
 changeShortcutBtn.addEventListener('click', openShortcutSettings);
 exportBtn.addEventListener('click', exportSettings);
 importBtn.addEventListener('click', () => importFileInput.click());
@@ -133,7 +134,8 @@ autoClickEnabled.addEventListener('change', () => {
 
 function loadSettings() {
   chrome.storage.sync.get([
-    'apiKey',
+    'licenseKey',
+    'proxyUrl',
     'answerMode',
     'language',
     'model',
@@ -146,8 +148,14 @@ function loadSettings() {
   ], (result) => {
     console.log('Loaded settings:', result);
 
-    if (result.apiKey) {
-      apiKeyInput.value = result.apiKey;
+    if (result.licenseKey) {
+      licenseKeyInput.value = result.licenseKey;
+    }
+
+    if (result.proxyUrl) {
+      proxyUrlInput.value = result.proxyUrl;
+    } else {
+      proxyUrlInput.value = 'https://admin.hailamdev.space';
     }
 
     if (result.answerMode) {
@@ -195,11 +203,51 @@ function updateUI(lang) {
   // Update title
   document.title = t.title;
 
-  // Update inputs placeholder if needed (optional)
+  // Update inputs placeholder
   if (lang === 'vi') {
-    apiKeyInput.placeholder = "Dán API Key vào đây...";
+    licenseKeyInput.placeholder = "KEY-VISION-XXXXXXXX";
+    proxyUrlInput.placeholder = "http://localhost:3000";
   } else {
-    apiKeyInput.placeholder = "Paste your API key here...";
+    licenseKeyInput.placeholder = "KEY-VISION-XXXXXXXX";
+    proxyUrlInput.placeholder = "http://localhost:3000";
+  }
+}
+
+async function checkQuota() {
+  const key = licenseKeyInput.value.trim();
+  const proxyUrl = proxyUrlInput.value.trim() || 'http://localhost:3000';
+  const t = translations[currentLang];
+
+  if (!key) {
+    showStatus(t.msg_invalid_key, 'error');
+    return;
+  }
+
+  checkQuotaBtn.disabled = true;
+
+  try {
+    const response = await fetch(`${proxyUrl}/api/quota?key=${encodeURIComponent(key)}`);
+    const data = await response.json();
+
+    if (response.ok && data.quota !== undefined) {
+      quotaInfo.style.display = 'flex';
+      quotaValue.textContent = data.quota;
+      quotaValue.className = `quota-value ${data.quota > 0 ? 'positive' : 'zero'}`;
+
+      if (!data.isActive) {
+        showStatus('Key đã bị vô hiệu hóa!', 'error');
+      }
+    } else {
+      quotaInfo.style.display = 'flex';
+      quotaValue.textContent = 'Invalid';
+      quotaValue.className = 'quota-value zero';
+      showStatus(data.error || t.msg_invalid_key, 'error');
+    }
+  } catch (error) {
+    console.error('Check quota error:', error);
+    showStatus('Không thể kết nối server!', 'error');
+  } finally {
+    checkQuotaBtn.disabled = false;
   }
 }
 
@@ -207,7 +255,8 @@ function saveSettings() {
   const selectedMode = document.querySelector('input[name="defaultMode"]:checked').value;
 
   const settings = {
-    apiKey: apiKeyInput.value.trim(),
+    licenseKey: licenseKeyInput.value.trim(),
+    proxyUrl: proxyUrlInput.value.trim() || 'http://localhost:3000',
     answerMode: selectedMode,
     language: languageSelect.value,
     model: modelSelect.value,
@@ -219,11 +268,7 @@ function saveSettings() {
     continueInBackground: continueInBackground.checked
   };
 
-  // Validate API key warning
   const t = translations[currentLang];
-  if (settings.apiKey && !settings.apiKey.startsWith('AIza')) {
-    showStatus(t.msg_invalid_key_format, 'error');
-  }
 
   chrome.storage.sync.set(settings, () => {
     console.log('Settings saved:', settings);
@@ -241,7 +286,8 @@ function resetSettings() {
   }
 
   const defaultSettings = {
-    apiKey: '',
+    licenseKey: '',
+    proxyUrl: 'https://admin.hailamdev.space',
     answerMode: 'tracNghiem',
     language: 'vi',
     model: 'gemini-2.0-flash-exp',
@@ -256,25 +302,9 @@ function resetSettings() {
 
   chrome.storage.sync.set(defaultSettings, () => {
     loadSettings();
+    quotaInfo.style.display = 'none';
     showStatus(t.msg_reset, 'success');
   });
-}
-
-function toggleApiKeyVisibility() {
-  const isPassword = apiKeyInput.type === 'password';
-  apiKeyInput.type = isPassword ? 'text' : 'password';
-  const t = translations[currentLang];
-
-  // Update icon based on state
-  if (isPassword) {
-    // Show closed eye (representing Hide)
-    toggleKeyBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
-    toggleKeyBtn.title = t.hint_hide_key;
-  } else {
-    // Show open eye
-    toggleKeyBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
-    toggleKeyBtn.title = t.hint_show_key;
-  }
 }
 
 function openShortcutSettings() {
@@ -285,6 +315,9 @@ function exportSettings() {
   const t = translations[currentLang];
   chrome.storage.sync.get(null, (settings) => {
     const exportData = { ...settings };
+    // Don't export license key for security
+    delete exportData.licenseKey;
+
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

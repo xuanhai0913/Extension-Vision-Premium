@@ -163,6 +163,47 @@ header {
   border-color: var(--primary);
 }
 
+/* Header Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Quota Badge */
+.quota-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.quota-badge svg {
+  opacity: 0.8;
+}
+
+.quota-badge span {
+  color: var(--text-main);
+}
+
+.quota-badge.low span {
+  color: #ef4444;
+}
+
+.quota-badge.medium span {
+  color: #f59e0b;
+}
+
+.quota-badge.high span {
+  color: #10b981;
+}
+
 /* Inputs */
 .mode-selector {
   position: relative;

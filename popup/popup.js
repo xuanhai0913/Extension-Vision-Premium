@@ -1,11 +1,11 @@
-// Vision Key - Popup Script
-// Phase 2: Screen capture implementation
+// Vision Key - Popup Script (SaaS Edition)
+// Screen capture implementation with Proxy API
 
 // Import modules
 import { captureFullViewport, getImageDimensions, cropImage } from '../scripts/capture.js';
 import { analyzeWithGemini } from '../scripts/api-service.js';
 
-console.log('Vision Key popup loaded');
+console.log('Vision Key popup loaded (SaaS Edition)');
 
 // DOM elements
 const captureBtn = document.getElementById('captureBtn');
@@ -26,11 +26,63 @@ const errorSection = document.getElementById('errorSection');
 const errorMessage = document.getElementById('errorMessage');
 const emptyState = document.getElementById('emptyState');
 
+// Quota elements
+const quotaBadge = document.getElementById('quotaBadge');
+const quotaCount = document.getElementById('quotaCount');
+
 const answerMode = document.getElementById('answerMode');
 const expertContext = document.getElementById('expertContext');
 
 // State
 let capturedImageData = null;
+
+// Fetch and display quota on popup load
+async function fetchQuota() {
+  try {
+    const settings = await chrome.storage.sync.get(['licenseKey', 'proxyUrl']);
+    const licenseKey = settings.licenseKey;
+    const proxyUrl = settings.proxyUrl || 'https://admin.hailamdev.space';
+
+    if (!licenseKey) {
+      quotaCount.textContent = '?';
+      quotaBadge.title = 'No license key';
+      return;
+    }
+
+    const response = await fetch(`${proxyUrl}/api/quota?key=${encodeURIComponent(licenseKey)}`);
+    const data = await response.json();
+
+    if (response.ok && data.quota !== undefined) {
+      quotaCount.textContent = data.quota;
+
+      // Color code based on quota level
+      quotaBadge.classList.remove('low', 'medium', 'high');
+      if (data.quota <= 10) {
+        quotaBadge.classList.add('low');
+      } else if (data.quota <= 50) {
+        quotaBadge.classList.add('medium');
+      } else {
+        quotaBadge.classList.add('high');
+      }
+
+      if (!data.isActive) {
+        quotaCount.textContent = '⛔';
+        quotaBadge.title = 'Key deactivated';
+      }
+    } else {
+      quotaCount.textContent = '!';
+      quotaBadge.classList.add('low');
+      quotaBadge.title = data.error || 'Invalid key';
+    }
+  } catch (error) {
+    console.error('Quota fetch error:', error);
+    quotaCount.textContent = '?';
+    quotaBadge.title = 'Server unavailable';
+  }
+}
+
+// Fetch quota on load
+fetchQuota();
 
 // Event listeners
 captureBtn.addEventListener('click', handleCapture);

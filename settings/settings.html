@@ -21,7 +21,7 @@
     </header>
 
     <div class="settings-grid">
-      <!-- API Key Section -->
+      <!-- License Key Section -->
       <div class="section">
         <div class="section-header">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -29,31 +29,43 @@
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
-          <h2 data-i18n="section_api_key">API Key Gemini</h2>
+          <h2 data-i18n="section_license_key">License Key</h2>
         </div>
-        <p class="description" data-i18n="desc_api_key">
-          Cần thiết để AI phân tích. Được lưu trữ cục bộ trên thiết bị của bạn.
+        <p class="description" data-i18n="desc_license_key">
+          Nhập License Key để sử dụng dịch vụ. Liên hệ admin để nhận key.
         </p>
         <div class="input-group">
-          <input type="password" id="apiKey" placeholder="Dán API Key vào đây..." autocomplete="off">
-          <button id="toggleKeyBtn" class="icon-btn" title="Hiện/Ẩn">
+          <input type="text" id="licenseKey" placeholder="KEY-VISION-XXXXXXXX" autocomplete="off">
+          <button id="checkQuotaBtn" class="icon-btn" title="Kiểm tra Quota">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
           </button>
         </div>
-        <div class="hint">
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="external-link">
-            <span data-i18n="link_get_key">Lấy API Key miễn phí</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-              <polyline points="15 3 21 3 21 9"></polyline>
-              <line x1="10" y1="14" x2="21" y2="3"></line>
-            </svg>
-          </a>
+        <div id="quotaInfo" class="quota-display" style="display: none;">
+          <span class="quota-label">Quota còn lại:</span>
+          <span id="quotaValue" class="quota-value">--</span>
+        </div>
+      </div>
+
+      <!-- Proxy Server Section -->
+      <div class="section">
+        <div class="section-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <h2 data-i18n="section_proxy">Proxy Server</h2>
+        </div>
+        <p class="description" data-i18n="desc_proxy">
+          URL của server proxy. Mặc định: http://localhost:3000
+        </p>
+        <div class="input-group">
+          <input type="text" id="proxyUrl" placeholder="http://localhost:3000" autocomplete="off">
         </div>
       </div>
 
