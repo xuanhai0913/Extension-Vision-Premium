@@ -13,12 +13,14 @@
 
 | Nền tảng | Trạng thái | Link tải / Repo |
 |:--------:|:----------:|:----------------|
+| 🌐 **Landing Page** | ✅ **Live** | [**visionpremium.hailamdev.space**](https://visionpremium.hailamdev.space/) |
 |  **macOS Native** |  **Stable** | [**Vision-Key** (Swift)](https://github.com/xuanhai0913/Vision-Key) <br> [![Stars](https://img.shields.io/github/stars/xuanhai0913/Vision-Key?style=social)](https://github.com/xuanhai0913/Vision-Key) |
 |  **Extension** |  **Stable** | [**Chrome/Edge/Brave**](https://github.com/xuanhai0913/Extension-Vision-Premium) <br> *(Repo hiện tại)* <br> [![Stars](https://img.shields.io/github/stars/xuanhai0913/Extension-Vision-Premium?style=social)](https://github.com/xuanhai0913/Extension-Vision-Premium) |
 |  **Windows Native** | 🚧 **Dev** | *Đang phát triển...* |
 
 ---
 
+[![Landing Page](https://img.shields.io/badge/🌐_Landing_Page-Visit-gold?style=flat-square)](https://visionpremium.hailamdev.space/)
 [![Chrome](https://img.shields.io/badge/Chrome-100+-4285F4?style=flat-square&logo=google-chrome)](https://www.google.com/chrome/)
 [![Edge](https://img.shields.io/badge/Edge-Supported-0078D7?style=flat-square&logo=microsoft-edge)](https://www.microsoft.com/edge)
 [![Javascript](https://img.shields.io/badge/Javascript-ES6+-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
@@ -27,7 +29,7 @@
 
 **Phiên bản PREMIUM với tính năng Auto-Click - Tự động chọn đáp án trên Quizizz/Wayground**
 
-[Tính năng](#-tính-năng) • [Auto-Click](#-auto-click) • [Cài đặt](#-cài-đặt) • [Sử dụng](#-sử-dụng)
+[🌐 Landing Page](https://visionpremium.hailamdev.space/) • [Tính năng](#-tính-năng) • [Auto-Click](#-auto-click) • [Cài đặt](#-cài-đặt) • [Sử dụng](#-sử-dụng)
 
 </div>
 
