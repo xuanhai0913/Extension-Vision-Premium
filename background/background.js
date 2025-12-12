@@ -11,7 +11,8 @@ chrome.runtime.onInstalled.addListener((details) => {
     chrome.storage.sync.set({
       answerMode: 'tracNghiem',
       expertContext: '',
-      apiKey: ''
+      licenseKey: '',
+      proxyUrl: 'https://admin.hailamdev.space'
     });
   } else if (details.reason === 'update') {
     console.log('Vision Key updated!');
@@ -491,7 +492,8 @@ async function analyzeInBackground(imageDataUrl, tabId) {
   try {
     // Get settings
     const settings = await chrome.storage.sync.get([
-      'apiKey',
+      'licenseKey',
+      'proxyUrl',
       'answerMode',
       'expertContext',
       'autoClickEnabled',
@@ -501,10 +503,10 @@ async function analyzeInBackground(imageDataUrl, tabId) {
       'model'
     ]);
 
-    if (!settings.apiKey) {
-      console.error('No API key configured');
-      await showNotificationOnTab(tabId, '❌ Chưa cài đặt API Key');
-      return { success: false, reason: 'no_api_key' };
+    if (!settings.licenseKey) {
+      console.error('No License Key configured');
+      await showNotificationOnTab(tabId, '❌ Chưa cài đặt License Key');
+      return { success: false, reason: 'no_license_key' };
     }
 
     // Store analysis state
@@ -520,12 +522,11 @@ async function analyzeInBackground(imageDataUrl, tabId) {
       await showNotificationOnTab(tabId, '🔄 Đang phân tích...');
     }
 
-    // Call Gemini API directly (inline implementation to avoid import issues in service worker)
+    // Call Gemini API via Proxy
     const result = await callGeminiAPI(
       imageDataUrl,
       settings.answerMode || 'tracNghiem',
       settings.expertContext || '',
-      settings.apiKey,
       settings.model || 'gemini-2.0-flash-exp'
     );
 
@@ -585,7 +586,8 @@ async function analyzeInBackgroundWithMode(imageDataUrl, tabId, mode) {
   try {
     // Get settings
     const settings = await chrome.storage.sync.get([
-      'apiKey',
+      'licenseKey',
+      'proxyUrl',
       'expertContext',
       'autoClickEnabled',
       'autoClickDelay',
@@ -594,10 +596,10 @@ async function analyzeInBackgroundWithMode(imageDataUrl, tabId, mode) {
       'model'
     ]);
 
-    if (!settings.apiKey) {
-      console.error('No API key configured');
-      await showNotificationOnTab(tabId, '❌ Chưa cài đặt API Key');
-      return { success: false, reason: 'no_api_key' };
+    if (!settings.licenseKey) {
+      console.error('No License Key configured');
+      await showNotificationOnTab(tabId, '❌ Chưa cài đặt License Key');
+      return { success: false, reason: 'no_license_key' };
     }
 
     // Show analyzing notification on tab (if enabled)
@@ -606,12 +608,11 @@ async function analyzeInBackgroundWithMode(imageDataUrl, tabId, mode) {
       await showNotificationOnTab(tabId, `🔄 ${modeText} - Đang phân tích...`);
     }
 
-    // Call Gemini API with the specified mode
+    // Call Gemini API via Proxy
     const result = await callGeminiAPI(
       imageDataUrl,
       mode, // Use the specified mode instead of settings
       settings.expertContext || '',
-      settings.apiKey,
       settings.model || 'gemini-2.0-flash-exp'
     );
 
@@ -653,7 +654,7 @@ async function analyzeInBackgroundWithMode(imageDataUrl, tabId, mode) {
  * Call Proxy API (updated for SaaS model)
  * Uses proxy server instead of direct Gemini API
  */
-async function callGeminiAPI(imageDataUrl, mode, expertContext, apiKey, model) {
+async function callGeminiAPI(imageDataUrl, mode, expertContext, model) {
   // Get proxy settings
   const settings = await chrome.storage.sync.get(['licenseKey', 'proxyUrl']);
   const licenseKey = settings.licenseKey;

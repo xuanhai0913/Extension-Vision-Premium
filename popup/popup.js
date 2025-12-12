@@ -248,16 +248,16 @@ async function handleAnalyze() {
       return;
     }
 
-    // Get API key and auto-click settings
+    // Get license key and auto-click settings
     const settings = await chrome.storage.sync.get([
-      'apiKey',
+      'licenseKey',
       'autoClickEnabled',
       'autoClickDelay',
       'showClickNotification'
     ]);
 
-    if (!settings.apiKey) {
-      showError('API Key not set. Please configure in Settings.');
+    if (!settings.licenseKey) {
+      showError('License Key chưa được cấu hình. Vui lòng nhập trong Settings.');
       return;
     }
 
@@ -267,12 +267,11 @@ async function handleAnalyze() {
     // Show loading
     showLoading(true);
 
-    // Call Gemini API
+    // Call Gemini API via Proxy
     const result = await analyzeWithGemini(
       capturedImageData,
       answerMode.value,
-      expertContext.value,
-      settings.apiKey
+      expertContext.value
     );
 
     // Hide loading
